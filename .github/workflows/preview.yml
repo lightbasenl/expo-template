@@ -1,0 +1,44 @@
+name: preview
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: ['development']
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:      
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v2
+
+      - name: 🏗 Set BUILD_NUMBER
+        run: echo "BUILD_NUMBER=$(git show -s --format=%ct)" >> $GITHUB_ENV
+     
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: yarn
+
+      - name: 🏗 Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📦 Install dependencies
+        run: yarn install
+        
+      - name: 🔧 Run linter
+        run: yarn lint
+  
+      - name: 🔧 Run tsc
+        run: yarn tsCheck
+
+      - name: 🔧 Run tests
+        run: yarn test
+
+      - name: 🚀 Create preview
+        uses: expo/expo-github-action/preview@v8
+        id: preview
+        with:
+          command: eas update --auto

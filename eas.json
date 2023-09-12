@@ -1,0 +1,33 @@
+{
+  "build": {
+    "production": {
+      "node": "18.14.0",
+      "channel": "production",
+      "env": {
+        "BUILD_TYPE": "store",
+        "APP_VARIANT": "production"
+      }
+    },
+    "staging": {
+      "extends": "production",
+      "distribution": "internal",
+      "channel": "staging",
+      "env": {
+        "BUILD_TYPE": "internal",
+        "APP_VARIANT": "staging"
+      }
+    },
+    "development": {
+      "extends": "staging",
+      "developmentClient": true,
+      "channel": "development",
+      "env": {
+        "BUILD_TYPE": "internal",        
+        "APP_VARIANT": "staging"
+      }
+    }
+  },
+  "cli": {
+    "promptToConfigurePushNotifications": false
+  }
+}

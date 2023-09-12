@@ -1,0 +1,54 @@
+name: production
+on:
+  push:
+    tags:        
+      - "v[0-9]+.[0-9]+.[0-9]+"
+jobs:
+  production_deploy:
+    runs-on: ubuntu-latest
+    steps:      
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v2
+
+      - name: 🏗 Set BUILD_NUMBER
+        run: echo "BUILD_NUMBER=$(git show -s --format=%ct)" >> $GITHUB_ENV
+     
+      - name: 🏗 Set GIT_MESSAGE
+        run: |
+          COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          echo "COMMIT_MESSAGE<<EOF" >> $GITHUB_ENV
+          echo "$COMMIT_MESSAGE" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: yarn
+
+      - name: 📦 Install dependencies
+        run: yarn install
+        
+      - name: 🔧 Run linter
+        run: yarn lint
+  
+      - name: 🔧 Run tsc
+        run: yarn tsCheck
+
+      - name: 🔧 Run tests
+        run: yarn test
+        
+      - name: 🏗 Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🫢 Set build secret
+        run: eas secret:create --scope project --name BUILD_NUMBER --value ${{ env.BUILD_NUMBER }} --type string --force
+
+      - name: 🫢 Set build secret - COMMIT_MESSAGE
+        run: eas secret:create --scope project --name COMMIT_MESSAGE --value "${{ env.COMMIT_MESSAGE }}" --type string --force
+
+      - name: 🚀 Build new production app
+        run: eas build --profile production --non-interactive --platform all --auto-submit --no-wait
